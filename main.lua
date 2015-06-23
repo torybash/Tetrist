@@ -31,6 +31,7 @@
 
 require("game");
 require("platform")
+require("trist");
 
 function love.load()
 	love.graphics.setNewFont(18)

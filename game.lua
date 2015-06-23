@@ -1,3 +1,4 @@
+
 -- ========================================================================== --
 --   Game logic implementation.                                               --
 --   Copyright (c) 2011 Laurens Rodriguez Oscanoa.                            --
@@ -315,12 +316,14 @@ function Game:start()
 	Game:setMatrixCells(self.m_map, Game.BOARD_TILEMAP_WIDTH, Game.BOARD_TILEMAP_HEIGHT, Game.Cell.EMPTY);
 
 	-- Initialize falling tetromino.
-	Game:setTetromino(Platform:random() % TETROMINO_TYPES, self.m_fallingBlock);
-	self.m_fallingBlock.x = math.floor((Game.BOARD_TILEMAP_WIDTH - self.m_fallingBlock.size) / 2);
-	self.m_fallingBlock.y = 0;
+  Game:makeNewTetromino(self.m_fallingBlock);
+--    Game:setTetromino(2, self.m_fallingBlock);
+--	Game:setTetromino(Platform:random() % TETROMINO_TYPES, self.m_fallingBlock);
+--	self.m_fallingBlock.x = math.floor((Game.BOARD_TILEMAP_WIDTH - self.m_fallingBlock.size) / 2);
+--	self.m_fallingBlock.y = 0;
 
 	-- Initialize preview tetromino.
-	Game:setTetromino(Platform.random() % TETROMINO_TYPES, self.m_nextBlock);
+--	Game:setTetromino(Platform.random() % TETROMINO_TYPES, self.m_nextBlock);
 
 	-- Initialize events.
 	Game:onTetrominoMoved();
@@ -542,21 +545,24 @@ function Game:moveTetromino(x, y)
 
 				-- Use preview tetromino as falling tetromino.
 				-- Copy preview tetromino for falling tetromino.
-				for i = 0, Game.TETROMINO_SIZE - 1 do
-					for j = 0, Game.TETROMINO_SIZE - 1 do
-						self.m_fallingBlock.cells[i][j] = self.m_nextBlock.cells[i][j];
-					end
-				end
-				self.m_fallingBlock.size = self.m_nextBlock.size;
-				self.m_fallingBlock.type = self.m_nextBlock.type;
+--				for i = 0, Game.TETROMINO_SIZE - 1 do
+--					for j = 0, Game.TETROMINO_SIZE - 1 do
+--						self.m_fallingBlock.cells[i][j] = self.m_nextBlock.cells[i][j];
+--					end
+--				end
+--				self.m_fallingBlock.size = self.m_nextBlock.size;
+--				self.m_fallingBlock.type = self.m_nextBlock.type;
 
-				-- Reset position.
-				self.m_fallingBlock.y = 0;
-				self.m_fallingBlock.x = math.floor((Game.BOARD_TILEMAP_WIDTH - self.m_fallingBlock.size) / 2);
-				Game:onTetrominoMoved();
+--				-- Reset position.
+--				self.m_fallingBlock.y = 0;
+--				self.m_fallingBlock.x = math.floor((Game.BOARD_TILEMAP_WIDTH - self.m_fallingBlock.size) / 2);
+--				Game:onTetrominoMoved();
 
 				-- Create next preview tetromino.
-				Game:setTetromino(Platform:random() % TETROMINO_TYPES, self.m_nextBlock);
+        
+--				Game:setTetromino(Platform:random() % TETROMINO_TYPES, self.m_nextBlock);
+--          Game:setTetromino(Platform:random() % TETROMINO_TYPES, self.m_fallingBlock);
+          Game:makeNewTetromino(self.m_fallingBlock);
 			end
 		end
 	else
@@ -566,6 +572,27 @@ function Game:moveTetromino(x, y)
 	end
 	Game:onTetrominoMoved();
 end
+
+
+function Game:makeNewTetromino(block)
+ 
+
+
+  newTetrominoType = Trist:getHardestTetromino(self.m_map);
+
+ 
+  Game:setTetromino(newTetrominoType, block);
+  
+  block.y = 0;
+  block.x = math.floor((Game.BOARD_TILEMAP_WIDTH - block.size) / 2);
+  
+end
+
+
+
+
+
+
 
 -- Hard drop.
 function Game:dropTetromino()
@@ -749,3 +776,13 @@ function clearFlag(set, flag)
     return set;
 end
 
+
+
+
+
+
+
+
+function Game:getTypeCount()
+  return TETROMINO_TYPES;
+end
