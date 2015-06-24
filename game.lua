@@ -44,8 +44,6 @@ local ROTATION_AUTOREPEAT_DELAY = 375;
 -- Rotation autorepeat timer.
 local ROTATION_AUTOREPEAT_TIMER = 200;
 
--- Number of tetromino types.
-local TETROMINO_TYPES = 7;
 
 Game = {
     -- Playfield size (in tiles).
@@ -124,6 +122,10 @@ Game = {
         --      ....
         L = 6
     };
+
+
+-- Number of tetromino types.
+     TETROMINO_TYPES = 7;
 
     -- Color indexes.
     Cell = {
@@ -295,7 +297,7 @@ function Game:start()
     self.m_map = {};
 	self.m_stats = Game:createStatics();
 	self.m_fallingBlock = Game:createTetromino();
-	self.m_nextBlock = Game:createTetromino();
+	--self.m_nextBlock = Game:createTetromino();
 
 	self.m_errorCode = Game.Error.NONE;
 	self.m_systemTime = Platform:getSystemTime();
@@ -308,7 +310,7 @@ function Game:start()
 	self.m_showShadow = true;
 
 	-- Initialize game statistics.
-	for i = 0, TETROMINO_TYPES - 1 do
+	for i = 0, Game.TETROMINO_TYPES - 1 do
 		self.m_stats.pieces[i] = 0;
 	end
 
@@ -710,12 +712,12 @@ end
 
 -- This event is called when the falling tetromino is moved.
 function Game:onTetrominoMoved()
-	local y = 1;
+	-- local y = 1;
 	-- Calculate number of cells where shadow tetromino would be.
-	while (not Game:checkCollision(0, y)) do
-        y = y + 1;
-    end
-	self.m_shadowGap = y - 1;
+	-- while (not Game:checkCollision(0, y)) do
+ --        y = y + 1;
+ --    end
+	-- self.m_shadowGap = y - 1;
 	self.m_stateChanged = true;
 end
 
@@ -780,9 +782,3 @@ end
 
 
 
-
-
-
-function Game:getTypeCount()
-  return TETROMINO_TYPES;
-end
