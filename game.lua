@@ -45,6 +45,8 @@ local ROTATION_AUTOREPEAT_DELAY = 375;
 local ROTATION_AUTOREPEAT_TIMER = 200;
 
 
+
+
 Game = {
     -- Playfield size (in tiles).
     BOARD_TILEMAP_WIDTH  = 10;
@@ -122,6 +124,10 @@ Game = {
         --      ....
         L = 6
     };
+    
+    EvilTetrominoType = {
+      Z = 0, T = 1, S = 2, J = 3, L = 4, O = 5, I = 6
+    };
 
 
 -- Number of tetromino types.
@@ -196,6 +202,8 @@ Game = {
     m_delayDown = nil;
 
     m_delayRotation = nil;
+    
+    m_useEvilOrder = nil;
 };
 
 -- The platform must call this method after processing a changed state.
@@ -250,49 +258,91 @@ function Game:setTetromino(indexTetromino, tetromino)
 	tetromino.size = Game.TETROMINO_SIZE - 1;
 
 	-- Initial configuration from: http://tetris.wikia.com/wiki/SRS
-	if indexTetromino == Game.TetrominoType.I then
+  if (useEvilOrder) then
+    if indexTetromino == Game.EvilTetrominoType.I then
         tetromino.cells[0][1] = Game.Cell.CYAN;
         tetromino.cells[1][1] = Game.Cell.CYAN;
         tetromino.cells[2][1] = Game.Cell.CYAN;
         tetromino.cells[3][1] = Game.Cell.CYAN;
         tetromino.size = Game.TETROMINO_SIZE;
-    elseif indexTetromino == Game.TetrominoType.O then
+    elseif indexTetromino == Game.EvilTetrominoType.O then
         tetromino.cells[0][0] = Game.Cell.YELLOW;
         tetromino.cells[0][1] = Game.Cell.YELLOW;
         tetromino.cells[1][0] = Game.Cell.YELLOW;
         tetromino.cells[1][1] = Game.Cell.YELLOW;
         tetromino.size = Game.TETROMINO_SIZE - 2;
-    elseif indexTetromino == Game.TetrominoType.T then
+    elseif indexTetromino == Game.EvilTetrominoType.T then
         tetromino.cells[0][1] = Game.Cell.PURPLE;
         tetromino.cells[1][0] = Game.Cell.PURPLE;
         tetromino.cells[1][1] = Game.Cell.PURPLE;
         tetromino.cells[2][1] = Game.Cell.PURPLE;
-    elseif indexTetromino == Game.TetrominoType.S then
+    elseif indexTetromino == Game.EvilTetrominoType.S then
         tetromino.cells[0][1] = Game.Cell.GREEN;
         tetromino.cells[1][0] = Game.Cell.GREEN;
         tetromino.cells[1][1] = Game.Cell.GREEN;
         tetromino.cells[2][0] = Game.Cell.GREEN;
-    elseif indexTetromino == Game.TetrominoType.Z then
+    elseif indexTetromino == Game.EvilTetrominoType.Z then
         tetromino.cells[0][0] = Game.Cell.RED;
         tetromino.cells[1][0] = Game.Cell.RED;
         tetromino.cells[1][1] = Game.Cell.RED;
         tetromino.cells[2][1] = Game.Cell.RED;
-    elseif indexTetromino == Game.TetrominoType.J then
+    elseif indexTetromino == Game.EvilTetrominoType.J then
         tetromino.cells[0][0] = Game.Cell.BLUE;
         tetromino.cells[0][1] = Game.Cell.BLUE;
         tetromino.cells[1][1] = Game.Cell.BLUE;
         tetromino.cells[2][1] = Game.Cell.BLUE;
-    elseif indexTetromino == Game.TetrominoType.L then
+    elseif indexTetromino == Game.EvilTetrominoType.L then
         tetromino.cells[0][1] = Game.Cell.ORANGE;
         tetromino.cells[1][1] = Game.Cell.ORANGE;
         tetromino.cells[2][0] = Game.Cell.ORANGE;
         tetromino.cells[2][1] = Game.Cell.ORANGE;
 	end
+  else  
+    if indexTetromino == Game.TetrominoType.I then
+          tetromino.cells[0][1] = Game.Cell.CYAN;
+          tetromino.cells[1][1] = Game.Cell.CYAN;
+          tetromino.cells[2][1] = Game.Cell.CYAN;
+          tetromino.cells[3][1] = Game.Cell.CYAN;
+          tetromino.size = Game.TETROMINO_SIZE;
+      elseif indexTetromino == Game.TetrominoType.O then
+          tetromino.cells[0][0] = Game.Cell.YELLOW;
+          tetromino.cells[0][1] = Game.Cell.YELLOW;
+          tetromino.cells[1][0] = Game.Cell.YELLOW;
+          tetromino.cells[1][1] = Game.Cell.YELLOW;
+          tetromino.size = Game.TETROMINO_SIZE - 2;
+      elseif indexTetromino == Game.TetrominoType.T then
+          tetromino.cells[0][1] = Game.Cell.PURPLE;
+          tetromino.cells[1][0] = Game.Cell.PURPLE;
+          tetromino.cells[1][1] = Game.Cell.PURPLE;
+          tetromino.cells[2][1] = Game.Cell.PURPLE;
+      elseif indexTetromino == Game.TetrominoType.S then
+          tetromino.cells[0][1] = Game.Cell.GREEN;
+          tetromino.cells[1][0] = Game.Cell.GREEN;
+          tetromino.cells[1][1] = Game.Cell.GREEN;
+          tetromino.cells[2][0] = Game.Cell.GREEN;
+      elseif indexTetromino == Game.TetrominoType.Z then
+          tetromino.cells[0][0] = Game.Cell.RED;
+          tetromino.cells[1][0] = Game.Cell.RED;
+          tetromino.cells[1][1] = Game.Cell.RED;
+          tetromino.cells[2][1] = Game.Cell.RED;
+      elseif indexTetromino == Game.TetrominoType.J then
+          tetromino.cells[0][0] = Game.Cell.BLUE;
+          tetromino.cells[0][1] = Game.Cell.BLUE;
+          tetromino.cells[1][1] = Game.Cell.BLUE;
+          tetromino.cells[2][1] = Game.Cell.BLUE;
+      elseif indexTetromino == Game.TetrominoType.L then
+          tetromino.cells[0][1] = Game.Cell.ORANGE;
+          tetromino.cells[1][1] = Game.Cell.ORANGE;
+          tetromino.cells[2][0] = Game.Cell.ORANGE;
+          tetromino.cells[2][1] = Game.Cell.ORANGE;
+    end
+  end
 	tetromino.type = indexTetromino;
 end
 
 -- Start a new game.
-function Game:start()
+function Game:start(useEvilOrder)
+  
 	-- Initialize game data.
     self.m_map = {};
 	self.m_stats = Game:createStatics();
@@ -335,6 +385,8 @@ function Game:start()
 	self.m_delayRight = -1;
 	self.m_delayDown = -1;
 	self.m_delayRotation = -1;
+  
+  self.m_useEvilOrder = useEvilOrder;
 end
 
 -- Initialize the game. The error code (if any) is saved in [mErrorcode].

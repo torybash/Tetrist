@@ -55,6 +55,8 @@ local PIECES_LENGTH = 6;
 local NUMBER_WIDTH  = 7;
 local NUMBER_HEIGHT = 9;
     
+isInitialized = false;    
+    
 Platform = { 
     m_bmpBackground = nil;
     m_bmpBlocks = nil;
@@ -114,6 +116,8 @@ function Platform:init()
     --                                                              NUMBER_WIDTH, NUMBER_HEIGHT, w, h);
     --     end
     -- end
+    
+    isInitialized = true;
 end
 
 -- Process events and notify game.
@@ -133,9 +137,9 @@ function Platform:onKeyDown(key)
     if ((key == "up") or (key == "w")) then
         Game:onEventStart(Game.Event.ROTATE_CW);
     end
-    if (key == " ") then
-        Game:onEventStart(Game.Event.DROP);
-    end
+--    if (key == " ") then
+--        Game:onEventStart(Game.Event.DROP);
+--    end
     -- if (key == "f5") then
     --     Game:onEventStart(Game.Event.RESTART);
     -- end
@@ -163,22 +167,22 @@ function Platform:onKeyUp(key)
     if ((key == "up") or (key == "w")) then
         Game:onEventEnd(Game.Event.ROTATE_CW);
     end
-    if (key == "f4") then
-		if (self.m_musicMute) then
-			if (self.m_musicIntro) then
-				self.m_musicIntro:resume();
-			else
-				self.m_musicLoop:resume();
-			end
-		else
-			if (self.m_musicIntro) then
-				self.m_musicIntro:pause();
-			else
-				self.m_musicLoop:pause();
-			end
-		end
-		self.m_musicMute = not self.m_musicMute;
-    end
+--    if (key == "f4") then
+--		if (self.m_musicMute) then
+--			if (self.m_musicIntro) then
+--				self.m_musicIntro:resume();
+--			else
+--				self.m_musicLoop:resume();
+--			end
+--		else
+--			if (self.m_musicIntro) then
+--				self.m_musicIntro:pause();
+--			else
+--				self.m_musicLoop:pause();
+--			end
+--		end
+--		self.m_musicMute = not self.m_musicMute;
+--    end
 end
 
 -- Draw a tile from a tetromino
@@ -199,6 +203,8 @@ end
 
 -- Render the state of the game using platform functions.
 function Platform:renderGame()
+
+  if (not isInitialized) then return; end
 
     -- Draw background
     love.graphics.draw(self.m_bmpBackground, 0, 0);
@@ -254,9 +260,9 @@ function Platform:renderGame()
     -- Draw game statistic data
     if (not Game:isPaused()) then
 
-        love.graphics.print("Level: " .. Game:stats().level, LEVEL_X, LEVEL_Y)
+--        love.graphics.print("Level: " .. Game:stats().level, LEVEL_X, LEVEL_Y)
         love.graphics.print("Lines: " .. Game:stats().lines, LINES_X, LINES_Y)
-        love.graphics.print("Score: " .. Game:stats().score, SCORE_X, SCORE_Y)
+--        love.graphics.print("Score: " .. Game:stats().score, SCORE_X, SCORE_Y)
 
         -- Platform:drawNumber(LEVEL_X, LEVEL_Y, Game:stats().level, LEVEL_LENGTH, Game.Cell.WHITE);
         -- Platform:drawNumber(LINES_X, LINES_Y, Game:stats().lines, LINES_LENGTH, Game.Cell.WHITE);

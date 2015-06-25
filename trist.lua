@@ -24,12 +24,18 @@ Trist = {
     end;
 };
 
-local searchDepth = 0;
+searchDepth = null;
+useEvilOrder = null;
 
-function Trist:init()
+function Trist:init(difficulty)
 	Transforms = {"U", "D", "L", "R"};
 	Blocks = {"I", "O", "T", "S", "Z", "J", "L"};
-	   
+ 
+ 
+  searchDepth = difficulty;
+  
+  useEvilOrder = false;
+  if (difficulty > 0) then useEvilOrder = true; end
 end
 
 
@@ -59,7 +65,7 @@ end
 
 
 function Trist:worstPiece(thisWell, thisWellRating)
-	print("worstPiece");
+	print("worstPiece -- searchDepth: " .. searchDepth);
 
 	local worstRating = null;
 	local worstId = null;

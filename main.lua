@@ -32,29 +32,61 @@
 require("game");
 require("platform")
 require("trist");
+require("trist_control");
+require("trist_menu");
+
+
+
+
+
 
 function love.load()
 	io.stdout:setvbuf("no") --Print to console
 
+  love.graphics.setNewFont(18)
 
+ 
+  
+  TristControl:init();
 
-	love.graphics.setNewFont(18)
-	   Trist:init();
-    Game:init();
+	
+ 
+    
 end
 
+
+
 function love.update(dt)
-    Game:update();
+  TristControl.update(dt);
 end
 
 function love.draw()
-    Platform:renderGame();
+  TristControl:renderGame();
 end
 
 function love.keypressed(key, unicode)
-    Platform:onKeyDown(key);
+  --TristControl:onKeyDown(key);
+  
+  Platform:onKeyDown(key);
+   
 end
 
 function love.keyreleased(key)
-    Platform:onKeyUp(key);
+   Platform:onKeyUp(key);
+  --TristControl:onKeyUp(key);    
+end
+
+function love.mousepressed(x, y, button)
+  --DEBUG SHOULD NOT BE HERE
+  print(x, y);
+  if (button ~= "l") then return; end
+  if (x > 490 and x < 790) then
+      if (y > 380 and y < 480) then
+        TristControl:startGame(1);
+      elseif (y > 490 and y < 590) then
+        TristControl:startGame(0);
+      end
+  end
+    
+  --TristControl.mousePressed(newx, newy, button);
 end
