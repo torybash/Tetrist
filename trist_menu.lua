@@ -1,0 +1,6 @@
+function initMenu()
+	
+
+end
+
+

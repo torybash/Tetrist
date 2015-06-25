@@ -36,7 +36,10 @@ require("trist");
 function love.load()
 	io.stdout:setvbuf("no") --Print to console
 
+
+
 	love.graphics.setNewFont(18)
+	   Trist:init();
     Game:init();
 end
 
