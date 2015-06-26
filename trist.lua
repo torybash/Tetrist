@@ -25,14 +25,18 @@ Trist = {
 };
 
 searchDepth = null;
+fullSearch = null;
 useEvilOrder = null;
 
 function Trist:init(difficulty)
 	Transforms = {"U", "D", "L", "R"};
 	Blocks = {"I", "O", "T", "S", "Z", "J", "L"};
+	EvilBlocks = {"Z", "S", "T", "J", "L", "O", "I"};
+
  
- 
-  searchDepth = difficulty;
+  searchDepth = 0;
+  fullSearch = false;
+
   
   useEvilOrder = false;
   if (difficulty > 0) then useEvilOrder = true; end
@@ -45,7 +49,10 @@ function Trist:getHardestTetromino()
   local tetromino = 0;
 
   local currentRating = Trist:calculateWellRating(Game.m_map);
+
   local worstPiece = Trist:worstPiece(Game.m_map, currentRating);
+
+
 
   print("Worst piece is: " .. worstPiece)
   return worstPiece;
@@ -65,7 +72,7 @@ end
 
 
 function Trist:worstPiece(thisWell, thisWellRating)
-	print("worstPiece -- searchDepth: " .. searchDepth);
+	print("worstPiece -- searchDepth: " .. searchDepth .. ", thisWellRating: " .. thisWellRating);
 
 	local worstRating = null;
 	local worstId = null;
@@ -74,8 +81,12 @@ function Trist:worstPiece(thisWell, thisWellRating)
 
 		currentRating = Trist:bestWellRating(thisWell, thisWellRating, pieceId, searchDepth);
 
-		print("piece: " .. pieceId .. " = " .. Blocks[pieceId + 1] .. ", rating: " .. currentRating);
+		if (useEvilOrder) then
+			print("evilpiece: " .. pieceId .. " = " .. EvilBlocks[pieceId + 1] .. ", rating: " .. currentRating);
+		else
+			print("piece: " .. pieceId .. " = " .. Blocks[pieceId + 1] .. ", rating: " .. currentRating);
 
+		end
 
 		--update worstRating
 		if(worstRating == nil or currentRating < worstRating) then
@@ -96,9 +107,9 @@ function Trist:bestWellRating(thisWell, thisWellRating, pieceId, thisSearchDepth
 
 	--print("bestWellRating - searchDepth: " .. thisSearchDepth .. ", pieceId: " .. pieceId);
 
-	local thisBlock = Trist:createTetromino();
-	Game:setTetromino(pieceId, thisBlock);
-	thisBlock.type = pieceId;
+	local initBlock = Trist:createTetromino();
+	Game:setTetromino(pieceId, initBlock);
+	initBlock.type = pieceId;
 
 -- 	// iterate over all possible resulting positions and get
 -- 	// best rating
@@ -107,75 +118,94 @@ function Trist:bestWellRating(thisWell, thisWellRating, pieceId, thisSearchDepth
 -- 	// start pathfinding for it
 -- 	// move through empty rows
 
-	while 
- 		thisBlock.y + 4 < Game.BOARD_TILEMAP_HEIGHT    -- piece is above the bottom
-		 -- nothing immediately below it
-		and thisWell[thisBlock.x + 1][thisBlock.y + 6] == -1 
-		and thisWell[thisBlock.x + 2][thisBlock.y + 6] == -1 
-	do 
-		--print("whiling");
-		thisBlock, hasCollision = Trist:tryTransform(thisWell, thisBlock, "D"); --// down
+	
+	--Should search from one drop down position or all
+	maxX = 0
+	if (fullSearch) then
+		maxX = Game.BOARD_TILEMAP_WIDTH-2; --min block size is 2
 	end
 
-	local piecePositions = {};
-	piecePositions[1] = thisBlock;
+	for x=0,maxX do
+		if ((Trist:rightMostX(initBlock) + x) >= Game.BOARD_TILEMAP_WIDTH)then break; end
 
-	local hashCodes = {};
-	hashCodes[Trist:pieceHash(thisBlock)] = 1;
-
-	local bestWell = null;
-
-	local i = 0; local c = 1;
-	while (i < #piecePositions) do
-		--print("i: " .. i);
-		thisBlock = piecePositions[i+1];
-
-		-- apply all possible transforms
-		for j=1,4 do
-			rotTyp = Transforms[j];
-
-			newBlock, hasCollision = Trist:tryTransform(thisWell, thisBlock, rotTyp);
-
-			if hasCollision then
-				--print("hasCollision!");
-				if (rotTyp == "D") then
-
-					newWell = deepcopy(thisWell);
-					newWellRating = thisWellRating;
-
-					--add piece
-					newWell, newWellRating = Trist:addPieceToWell(newWell, newWellRating, newBlock);
+		thisBlock = Trist:copyBlock(initBlock);
+		thisBlock.x = x;
+	
 
 
-					--calculate value
-					currentRating = newWellRating; 
-					if (thisSearchDepth > 0) then 
-						currentRating = currentRating + Trist:worstPieceRating(newWell, newWellRating, thisSearchDepth-1) / 100; 
-					end
-					-- + (
--- 	TODO			thisSearchDepth == 0 ? worstPieceRating(newWell, thisSearchDepth-1) / 100
-
-					-- store
- 					if(bestRating == null or currentRating > bestRating) then
- 						bestRating = currentRating;
- 						bestBlock = newBlock;
- 					end
-					
-				end
-			else -- transform succeeded?
-				-- new location? append to list
-				-- check locations, they are significant
-				newHashCode = Trist:pieceHash(newBlock);
-				if (hashCodes[newHashCode] == nil) then
-					c = c + 1;
-					piecePositions[c] = newBlock;
-					hashCodes[newHashCode] = 1;
-				end
-			end
-
-
+		while 
+	 		thisBlock.y + 4 < Game.BOARD_TILEMAP_HEIGHT    -- piece is above the bottom
+			 -- nothing immediately below it
+			and not Trist:isAnythingBelowBlock(thisWell, thisBlock, 3)
+			--and not Trist:isAnythingBelowBlock(thisWell, thisBlock, 2)
+		do 
+			-- if (thisBlock.type == Game.EvilTetrominoType.S) then
+			-- 	print("nothing below block..");
+			-- 	printWell(thisWell);
+			-- 	printBlock(thisBlock);
+			-- end
+			thisBlock, transformSuccesful = Trist:tryTransform(thisWell, thisBlock, "D"); --// down
 		end
-		i = i + 1;
+
+		local piecePositions = {};
+		piecePositions[1] = thisBlock;
+
+		local hashCodes = {};
+		hashCodes[Trist:pieceHash(thisBlock)] = 1;
+
+		local bestWell = null;
+
+		local i = 0; local c = 1;
+		while (i < #piecePositions) do
+			--print("i: " .. i);
+			thisBlock = piecePositions[i+1];
+
+			
+
+			
+			-- apply all possible transforms
+			for j=1,4 do
+				rotTyp = Transforms[j];
+
+				newBlock, hasCollision = Trist:tryTransform(thisWell, thisBlock, rotTyp);
+
+				if (hasCollision) then
+					if (rotTyp == "D") then --if has downwards collision (placing block) 
+						--copy well
+						newWell = deepcopy(thisWell);
+						newWellRating = thisWellRating;
+
+						--add piece to well
+						newWell, newWellRating = Trist:addPieceToWell(newWell, newWellRating, newBlock);
+
+						--calculate value
+						currentRating = newWellRating; 
+						if (thisSearchDepth > 0) then 
+							currentRating = currentRating + Trist:worstPieceRating(newWell, newWellRating, thisSearchDepth-1) / 100; 
+						end
+						
+						-- store
+	 					if(bestRating == null or currentRating > bestRating) then
+	 						bestRating = currentRating;
+	 						bestBlock = newBlock;
+	 					end
+					end
+				else -- transform succeeded?
+					-- new location? append to list
+					-- check locations, they are significant
+					newHashCode = Trist:pieceHash(newBlock);
+					if (hashCodes[newHashCode] == nil) then
+						c = c + 1;
+						piecePositions[c] = newBlock;
+						hashCodes[newHashCode] = 1;
+					end
+				end
+
+
+			end
+			i = i + 1;
+		end
+
 	end
 
 	return bestRating;
@@ -274,63 +304,38 @@ function Trist:getHighestYPos(block)
 end
 
 
-function Trist:printWell(thisWell)
-
-	string = "Well\n";
-	for y=0,Game.BOARD_TILEMAP_HEIGHT-1 do
-		for x=0,Game.BOARD_TILEMAP_WIDTH-1 do
-			char = thisWell[x][y];
-			if (thisWell[x][y] == -1) then char = "."; end
-			string = string .. char;
-		end
-		string = string .. "\n";
-	end
-	print(string);
-
-end
-
-
-function Trist:printBlock(block)
-	print("PrintBlock: " .. tostring(block) .. " - x, y: " .. tostring(block.x) .. "," .. tostring(block.y) .. ", o: " .. block.o .. ", size: " .. tostring(block.size));
-	str = "";
-	for y=0,Game.TETROMINO_SIZE-1 do
-		for x=0,Game.TETROMINO_SIZE-1 do
-			char = block.cells[x][y];
-			if (char == -1) then char = "."; end
-			str = str .. tostring(char);
-		end
-		str = str .. "\n";
-	end
-	print(str);
-end
 
 
 
-function Trist:tryTransform(thisWell, thisPiece, transformId)
 
+function Trist:tryTransform(thisWell, thisBlock, transformId)
 	--copy piece
-	copyPiece = Trist:createTetromino();
-	copyPiece.cells = deepcopy(thisPiece.cells);
-	copyPiece.x = thisPiece.x; copyPiece.y = thisPiece.y;
-	copyPiece.o = thisPiece.o;
-	copyPiece.size = thisPiece.size; copyPiece.type = thisPiece.type;
-
+	local copyBlock = Trist:copyBlock(thisBlock);
+	
+	-- apply transform
 	hasCollision = false;
-
-	-- apply transform (very fast now)
 	if (transformId == "L") then
-		hasCollision = Trist:moveTetromino(thisWell, copyPiece, -1, 0);
+		hasCollision = Trist:moveTetromino(thisWell, copyBlock, -1, 0);
 	elseif (transformId == "R") then
-		hasCollision = Trist:moveTetromino(thisWell, copyPiece, 1, 0);
+		hasCollision = Trist:moveTetromino(thisWell, copyBlock, 1, 0);
 	elseif (transformId == "D") then
-		hasCollision = Trist:moveTetromino(thisWell, copyPiece, 0, 1);
+		hasCollision = Trist:moveTetromino(thisWell, copyBlock, 0, 1);
 	elseif (transformId == "U") then
-		Trist:rotateTetromino(thisWell, copyPiece, true);
+		Trist:rotateTetromino(thisWell, copyBlock, true);
 	end
 
-	return copyPiece, hasCollision;
+	return copyBlock, hasCollision;
+end
 
-
+function Trist:copyBlock(block)
+	local copyBlock = Trist:createTetromino();
+	copyBlock.cells = deepcopy(block.cells);
+	copyBlock.x = block.x; 
+	copyBlock.y = block.y;
+	copyBlock.o = block.o;
+	copyBlock.size = block.size; 
+	copyBlock.type = block.type;
+	return copyBlock;
 end
 
 
@@ -345,9 +350,16 @@ function Trist:rotateTetromino(thisWell, block, clockwise)
 	local rotated = {};  
 
 	-- If TETROMINO_O is falling return immediately.
-	if (block.type == Game.TetrominoType.O) then
-		-- Rotation doesn't require any changes.
-		return; 
+	if (useEvilOrder) then
+		if (block.type == Game.EvilTetrominoType.O) then
+			-- Rotation doesn't require any changes.
+			return; 
+		end
+	else
+		if (block.type == Game.TetrominoType.O) then
+			-- Rotation doesn't require any changes.
+			return; 
+		end
 	end
 
 	-- Initialize rotated cells to blank.
@@ -428,49 +440,6 @@ function Trist:moveTetromino(thisWell, block, x, y)
 
 	-- Check if the move would create a collision.
 	if (Trist:checkCollision(thisWell, block, x, y)) then
-		-- In case of collision check if move was downwards (y == 1)
-		if (y == 1) then
-			-- Check if collision occurs when the falling
-			-- tetromino is on the 1st or 2nd row.
-			if (block.y <= 1) then
-				-- If this happens the game is over.
-				--self.m_isOver = true;  
-				print("over!") ;
-			else
-				-- -- The falling tetromino has reached the bottom,
-				-- -- so we copy their cells to the board map.
-				-- for i = 0, block.size - 1 do
-				-- 	for j = 0, block.size - 1 do
-				-- 		if (block.cells[i][j] ~= Game.Cell.EMPTY) then
-				-- 			thisWell[block.x + i][block.y + j] = block.cells[i][j];
-				-- 		end
-				-- 	end
-				-- end
-
-				-- -- Check if the landing tetromino has created full rows.
-				-- local numFilledRows = 0;
-				-- for j = 1, Game.BOARD_TILEMAP_HEIGHT - 1 do
-				-- 	local hasFullRow = true;
-				-- 	for i = 0, Game.BOARD_TILEMAP_WIDTH - 1 do
-				-- 		if (thisWell[i][j] == Game.Cell.EMPTY) then
-				-- 			hasFullRow = false;
-				-- 			break;
-				-- 		end
-				-- 	end
-				-- 	-- If we found a full row we need to remove that row from the map
-				-- 	-- we do that by just moving all the above rows one row below.
-				-- 	if (hasFullRow) then
-				-- 		for x = 0, Game.BOARD_TILEMAP_WIDTH - 1 do
-				-- 			for y = j, 1, -1 do
-				-- 				thisWell[x][y] = thisWell[x][y - 1];
-				-- 			end
-				-- 		end
-				-- 		-- Increase filled row counter.
-				-- 		numFilledRows = numFilledRows + 1;
-				-- 	end
-				-- end
-			end
-		end
 		return true;
 	else
 		-- There are no collisions, just move the tetromino.
@@ -486,10 +455,6 @@ end
 -- If there are collisions returns 1 else returns 0.
 function Trist:checkCollision(thisWell, block, dx, dy)
 
-	-- print("checkCollision - block, well:");
-	-- Trist:printBlock(block);
-	-- Trist:printWell(thisWell);
-
 	local newx = block.x + dx;
 	local newy = block.y + dy;
 	local hasCollision = false;
@@ -504,7 +469,6 @@ function Trist:checkCollision(thisWell, block, dx, dy)
 					hasCollision = true;
 					break;
 				end
-				--print("x: " .. (newx + i) .. ", y: " .. (newy + j)); --thisWell[newx + i][newy + j]);
 				-- Check that tetromino won't collide with existing cells in the map.
 				if (thisWell[newx + i][newy + j] ~= Game.Cell.EMPTY) then
 					hasCollision = true;
@@ -513,18 +477,29 @@ function Trist:checkCollision(thisWell, block, dx, dy)
 		end
 	end
 
-	-- if (hasCollision == false) then
-	-- 	block.x = newx;
-	-- 	block.y = newy;
-	-- end
-
 	return hasCollision;
 	
 end
 
 
-function Trist:pieceHash(block)
 
+function Trist:isAnythingBelowBlock(well, block, below)
+	for y=0,block.size-1 do
+		for x=0,block.size-1 do
+			if ((block.x + x) < Game.BOARD_TILEMAP_WIDTH) then
+				if ((block.y + y + below) >= Game.BOARD_TILEMAP_HEIGHT or
+					well[block.x + x][block.y + y + below] ~= -1)  then 
+					return true;
+				end
+			end
+		end
+	end
+	return false;
+end
+
+
+
+function Trist:pieceHash(block)
 	hash = 1;
 	hash = hash * 17 + block.x;
 	hash = hash * 37 + block.y;
@@ -534,6 +509,17 @@ function Trist:pieceHash(block)
 end
 
 
+function Trist:rightMostX(block)
+	mostX = 1;
+	for y=0,block.size-1 do
+		for x=1,block.size-1 do
+			if (x > mostX and block.cells[x][y] ~= -1) then
+				mostX = x;
+			end
+		end
+	end
+	return mostX;
+end
 
 
 
@@ -553,175 +539,55 @@ function deepcopy(orig)
     return copy
 end
 
--- function tryTransform(thisWell, thisPiece, transformId) {
--- 				// can't alter in place
--- 				var id = thisPiece.id;
--- 				var x  = thisPiece.x;
--- 				var y  = thisPiece.y;
--- 				var o  = thisPiece.o;
--- 				// apply transform (very fast now)
--- 				switch(transformId) {
--- 					case "L": x--;             break;
--- 					case "R": x++;             break;
--- 					case "D": y++;             break;
--- 					case "U": o = (o + 1) % 4; break;
--- 				}
--- 				var orientation = orientations[id][o];
--- 				var xActual = x + orientation.xMin;
--- 				var yActual = y + orientation.yMin;
--- 				if(
--- 					   xActual < 0                            // make sure not off left side
--- 					|| xActual + orientation.xDim > wellWidth // make sure not off right side
--- 					|| yActual + orientation.yDim > wellDepth // make sure not off bottom
--- 				) {
--- 					return null;
--- 				}
--- 				// make sure there is NOTHING IN THE WAY
--- 				// we do this by hunting for bit collisions
--- 				for(var row = 0; row < orientation.rows.length; row++) { // 0 to 0, 1, 2 or 3 depending on vertical size of piece
--- 					if(thisWell.content[yActual + row] & (orientation.rows[row] << xActual)) {
--- 						return null;
--- 					}
--- 				}
--- 				return { "id" : id, "x" : x, "y" : y, "o" : o };
--- 			}
+function printWell(thisWell)
+
+	string = "Well\n";
+	for y=0,Game.BOARD_TILEMAP_HEIGHT-1 do
+		for x=0,Game.BOARD_TILEMAP_WIDTH-1 do
+			char = thisWell[x][y];
+			if (thisWell[x][y] == -1) then char = "."; end
+			string = string .. char;
+		end
+		string = string .. "\n";
+	end
+	print(string);
+
+end
 
 
+function printBlock(block)
+	print("PrintBlock: " .. tostring(block) .. " - x, y: " .. tostring(block.x) .. "," .. tostring(block.y) .. ", o: " .. block.o .. ", size: " .. tostring(block.size));
+	str = "";
+	for y=0,Game.TETROMINO_SIZE-1 do
+		for x=0,Game.TETROMINO_SIZE-1 do
+			char = block.cells[x][y];
+			if (char == -1) then char = "."; end
+			str = str .. tostring(char);
+		end
+		str = str .. "\n";
+	end
+	print(str);
+end
 
-			-- // pick the worst piece that could be put into this well
-			-- // return the piece
-			-- // but not its rating
-			-- function worstPiece(thisWell) {
-			-- 	// iterate over all the pieces getting ratings
-			-- 	// select the lowest
-			-- 	var worstRating = null;
-			-- 	var worstId = null;
-			-- 	// we already have a list of possible pieces to iterate over
-			-- 	var startTime = new Date().getTime();
-			-- 	for(var id in pieces) {
-			-- 		var currentRating = bestWellRating(thisWell, id, searchDepth);
-			-- 		// update worstRating
-			-- 		if(worstRating == null || currentRating < worstRating) {
-			-- 			worstRating = currentRating;
-			-- 			worstId = id;
-			-- 		}
-			-- 		// return instantly upon finding a 0
-			-- 		if(worstRating == 0) {
-			-- 			break;
-			-- 		}
-			-- 	}
-			-- 	return {
-			-- 		"id" : worstId,
-			-- 		"x"  : Math.floor((wellWidth - 4) / 2),
-			-- 		"y"  : 0,
-			-- 		"o"  : 0
-			-- 	};
-			-- }
-			-- // pick the worst piece that could be put into this well
-			-- // return the rating of this piece
-			-- // but NOT the piece itself...
-			-- function worstPieceRating(thisWell, thisSearchDepth) {
-			-- 	// iterate over all the pieces getting ratings
-			-- 	// select the lowest
-			-- 	var worstRating = null;
-			-- 	// we already have a list of possible pieces to iterate over
-			-- 	for(var id in pieces) {
-			-- 		var currentRating = bestWellRating(thisWell, id, thisSearchDepth);
-			-- 		if(worstRating == null || currentRating < worstRating) {
-			-- 			worstRating = currentRating;
-			-- 		}
-			-- 		// if we have a 0 then that suffices, no point in searching further
-			-- 		// (except for benchmarking purposes)
-			-- 		if(worstRating == 0) {
-			-- 			return 0;
-			-- 		}
-			-- 	}
-			-- 	return worstRating;
-			-- }
+function printWellWithBlock(well, block)
+
+	string = "Well\n";
+	for y=0,Game.BOARD_TILEMAP_HEIGHT-1 do
+		for x=0,Game.BOARD_TILEMAP_WIDTH-1 do
 
 
+			char = well[x][y];
+			if (block.x >= x and block.x + block.size < x and
+				block.y >= y and block.y + block.size < y 
+				and block.cells[x - block.x][y - block.y]) then
+				char = block.cells[x - block.x][y - block.y];
+			end
+			if (well[x][y] == -1) then char = "."; end
+			string = string .. char;
+		end
+		string = string .. "\n";
+	end
+	print(string);
 
-			-- // given a well and a piece, find the best possible location to put it
-			-- // return the best rating found
-			-- function bestWellRating(thisWell, pieceId, thisSearchDepth) {
-			-- 	var thisPiece = {
-			-- 		"id" : pieceId,
-			-- 		"x"  : 0,
-			-- 		"y"  : 0,
-			-- 		"o"  : 0
-			-- 	};
-			-- 	// iterate over all possible resulting positions and get
-			-- 	// best rating
-			-- 	var bestRating = null;
-			-- 	// move the piece down to a lower position before we have to
-			-- 	// start pathfinding for it
-			-- 	// move through empty rows
-			-- 	while(
-			-- 		   thisPiece.y + 4 < wellDepth    // piece is above the bottom
-			-- 		&& thisWell.content[thisPiece.y + 4] == 0 // nothing immediately below it
-			-- 	) {
-			-- 		thisPiece = tryTransform(thisWell, thisPiece, "D"); // down
-			-- 	}
-			-- 	// push first position
-			-- 	var piecePositions = [];
-			-- 	piecePositions.push(thisPiece);
-			-- 	var ints = [];
-			-- 	ints[hashCode(thisPiece.x, thisPiece.y, thisPiece.o)] = 1;
-			-- 	// a simple for loop won't work here because
-			-- 	// we are increasing the list as we go
-			-- 	var i = 0;
-			-- 	while(i < piecePositions.length) {
-			-- 		thisPiece = piecePositions[i];
-			-- 		// apply all possible transforms
-			-- 		for(var j in transforms) {
-			-- 			var newPiece = tryTransform(thisWell, thisPiece, j);
-			-- 			// transformation failed?
-			-- 			if(newPiece == null) {
-			-- 				// piece locked? better add that to the list
-			-- 				// do NOT check locations, they aren't significant here
-			-- 				if(j == "D") {
-			-- 					// make newWell from thisWell
-			-- 					// no deep copying in javascript!!
-			-- 					var newWell = {
-			-- 						"content" : [],
-			-- 						"score" : thisWell.score,
-			-- 						"highestBlue" : thisWell.highestBlue
-			-- 					};
-			-- 					for(var row2 = 0; row2 < wellDepth; row2++) {
-			-- 						newWell.content.push(thisWell.content[row2]);
-			-- 					}
-			-- 					// alter the well
-			-- 					// this will update newWell, including certain well metadata
-			-- 					addPiece(newWell, thisPiece);
-			-- 					// here is the clever recursive search bit
-			-- 					// higher is better
-			-- 					var currentRating = newWell.highestBlue + (
-			-- 						thisSearchDepth == 0 ?
-			-- 							0
-			-- 						:
-			-- 							// deeper lines are worth less than immediate lines
-			-- 							// this is so the game will never give you a line if it can avoid it
-			-- 							// NOTE: make sure rating doesn't return a range of more than 100 values...
-			-- 							worstPieceRating(newWell, thisSearchDepth-1) / 100
-			-- 					);
-			-- 					// store
-			-- 					if(bestRating == null || currentRating > bestRating) {
-			-- 						bestRating = currentRating;
-			-- 					}
-			-- 				}
-			-- 			}
-			-- 			// transform succeeded?
-			-- 			else {
-			-- 				// new location? append to list
-			-- 				// check locations, they are significant
-			-- 				var newHashCode = hashCode(newPiece.x, newPiece.y, newPiece.o);
-			-- 				if(ints[newHashCode] == undefined) {
-			-- 					piecePositions.push(newPiece);
-			-- 					ints[newHashCode] = 1;
-			-- 				}
-			-- 			}
-			-- 		}
-			-- 		i++;
-			-- 	}
-			-- 	return bestRating;
-			-- }
+
+end

@@ -1,11 +1,42 @@
 
 -- ========================================================================== --
+--                          STC - SIMPLE TETRIS CLONE                         --
+-- -------------------------------------------------------------------------- --
+--   A simple tetris clone in Lua using the LOVE engine:                      --
+--   http://love2d.org/                                                       --
+--                                                                            --
+-- -------------------------------------------------------------------------- --
+--   Copyright (c) 2011 Laurens Rodriguez Oscanoa.                            --
+--                                                                            --
+--   Permission is hereby granted, free of charge, to any person              --
+--   obtaining a copy of this software and associated documentation           --
+--   files (the "Software"), to deal in the Software without                  --
+--   restriction, including without limitation the rights to use,             --
+--   copy, modify, merge, publish, distribute, sublicense, and/or sell        --
+--   copies of the Software, and to permit persons to whom the                --
+--   Software is furnished to do so, subject to the following                 --
+--   conditions:                                                              --
+--                                                                            --
+--   The above copyright notice and this permission notice shall be           --
+--   included in all copies or substantial portions of the Software.          --
+--                                                                            --
+--   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,          --
+--   EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES          --
+--   OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND                 --
+--   NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT              --
+--   HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,             --
+--   WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING             --
+--   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR            --
+--   OTHER DEALINGS IN THE SOFTWARE.                                          --
+-- -------------------------------------------------------------------------- --
+
+-- ========================================================================== --
 --   Game logic implementation.                                               --
 --   Copyright (c) 2011 Laurens Rodriguez Oscanoa.                            --
 -- -------------------------------------------------------------------------- --
 
 -- Initial time delay (in milliseconds) between falling moves.
-local INIT_DELAY_FALL = 1000;
+local INIT_DELAY_FALL = 1250;
 
 -- Score points given by filled rows (we use the original NES * 10)
 -- http://tetris.wikia.com/wiki/Scoring
@@ -126,7 +157,7 @@ Game = {
     };
     
     EvilTetrominoType = {
-      Z = 0, T = 1, S = 2, J = 3, L = 4, O = 5, I = 6
+      Z = 0, S = 1, T = 2, J = 3, L = 4, O = 5, I = 6
     };
 
 
@@ -204,6 +235,8 @@ Game = {
     m_delayRotation = nil;
     
     m_useEvilOrder = nil;
+
+    m_highScore = nil;
 };
 
 -- The platform must call this method after processing a changed state.
@@ -260,10 +293,14 @@ function Game:setTetromino(indexTetromino, tetromino)
 	-- Initial configuration from: http://tetris.wikia.com/wiki/SRS
   if (useEvilOrder) then
     if indexTetromino == Game.EvilTetrominoType.I then
-        tetromino.cells[0][1] = Game.Cell.CYAN;
-        tetromino.cells[1][1] = Game.Cell.CYAN;
-        tetromino.cells[2][1] = Game.Cell.CYAN;
-        tetromino.cells[3][1] = Game.Cell.CYAN;
+        -- tetromino.cells[0][1] = Game.Cell.CYAN;
+        -- tetromino.cells[1][1] = Game.Cell.CYAN;
+        -- tetromino.cells[2][1] = Game.Cell.CYAN;
+        -- tetromino.cells[3][1] = Game.Cell.CYAN;
+          tetromino.cells[1][0] = Game.Cell.CYAN;
+          tetromino.cells[1][1] = Game.Cell.CYAN;
+          tetromino.cells[1][2] = Game.Cell.CYAN;
+          tetromino.cells[1][3] = Game.Cell.CYAN;
         tetromino.size = Game.TETROMINO_SIZE;
     elseif indexTetromino == Game.EvilTetrominoType.O then
         tetromino.cells[0][0] = Game.Cell.YELLOW;
@@ -299,10 +336,14 @@ function Game:setTetromino(indexTetromino, tetromino)
 	end
   else  
     if indexTetromino == Game.TetrominoType.I then
-          tetromino.cells[0][1] = Game.Cell.CYAN;
+          -- tetromino.cells[0][1] = Game.Cell.CYAN;
+          -- tetromino.cells[1][1] = Game.Cell.CYAN;
+          -- tetromino.cells[2][1] = Game.Cell.CYAN;
+          -- tetromino.cells[3][1] = Game.Cell.CYAN;
+          tetromino.cells[1][0] = Game.Cell.CYAN;
           tetromino.cells[1][1] = Game.Cell.CYAN;
-          tetromino.cells[2][1] = Game.Cell.CYAN;
-          tetromino.cells[3][1] = Game.Cell.CYAN;
+          tetromino.cells[1][2] = Game.Cell.CYAN;
+          tetromino.cells[1][3] = Game.Cell.CYAN;
           tetromino.size = Game.TETROMINO_SIZE;
       elseif indexTetromino == Game.TetrominoType.O then
           tetromino.cells[0][0] = Game.Cell.YELLOW;
@@ -354,7 +395,7 @@ function Game:start(useEvilOrder)
 	self.m_lastFallTime = self.m_systemTime;
 	self.m_isOver = false;
 	self.m_isPaused = false;
-	self.m_showPreview = true;
+	-- self.m_showPreview = true;
 	self.m_events = Game.Event.NONE;
 	self.m_fallingDelay = INIT_DELAY_FALL;
 	self.m_showShadow = true;
@@ -368,7 +409,7 @@ function Game:start(useEvilOrder)
 	Game:setMatrixCells(self.m_map, Game.BOARD_TILEMAP_WIDTH, Game.BOARD_TILEMAP_HEIGHT, Game.Cell.EMPTY);
 
 	-- Initialize falling tetromino.
-  Game:makeNewTetromino(self.m_fallingBlock);
+    Game:makeNewTetromino(self.m_fallingBlock);
 --    Game:setTetromino(2, self.m_fallingBlock);
 --	Game:setTetromino(Platform:random() % TETROMINO_TYPES, self.m_fallingBlock);
 --	self.m_fallingBlock.x = math.floor((Game.BOARD_TILEMAP_WIDTH - self.m_fallingBlock.size) / 2);
@@ -387,6 +428,12 @@ function Game:start(useEvilOrder)
 	self.m_delayRotation = -1;
   
   self.m_useEvilOrder = useEvilOrder;
+
+    if (m_highScore == nil) then m_highScore = 0; end
+end
+
+function Game:getHighScore()
+    return m_highScore;
 end
 
 -- Initialize the game. The error code (if any) is saved in [mErrorcode].
@@ -406,11 +453,19 @@ function Game:rotateTetromino(clockwise)
 	-- Temporary array to hold rotated cells.
 	local rotated = {};  
 
+
 	-- If TETROMINO_O is falling return immediately.
-	if (self.m_fallingBlock.type == Game.TetrominoType.O) then
-		-- Rotation doesn't require any changes.
-		return; 
-	end
+    if (m_useEvilOrder) then 
+        if (self.m_fallingBlock.type == Game.TetrominoType.O) then
+            -- Rotation doesn't require any changes.
+            return; 
+        end
+    else 
+        if (self.m_fallingBlock.type == Game.EvilTetrominoType.O) then
+            -- Rotation doesn't require any changes.
+            return; 
+        end
+    end
 
 	-- Initialize rotated cells to blank.
 	Game:setMatrixCells(rotated, Game.TETROMINO_SIZE, Game.TETROMINO_SIZE, Game.Cell.EMPTY);
@@ -514,6 +569,7 @@ end
 function Game:onFilledRows(filledRows)
     -- Update total number of filled rows.
 	self.m_stats.lines = self.m_stats.lines + filledRows;
+  m_highScore = math.max(self.m_stats.lines, m_highScore);
 
 	-- Increase score accordingly to the number of filled rows.
 	if (filledRows == 1) then
@@ -551,9 +607,11 @@ function Game:moveTetromino(x, y)
 		if (y == 1) then
 			-- Check if collision occurs when the falling
 			-- tetromino is on the 1st or 2nd row.
-			if (self.m_fallingBlock.y <= 1) then
+			if (self.m_fallingBlock.y <= 0) then --blocks fill at least two top rows
 				-- If this happens the game is over.
-				self.m_isOver = true;   
+
+				
+                Game:gameEnded(); 
 			else
 				-- The falling tetromino has reached the bottom,
 				-- so we copy their cells to the board map.
@@ -616,7 +674,8 @@ function Game:moveTetromino(x, y)
         
 --				Game:setTetromino(Platform:random() % TETROMINO_TYPES, self.m_nextBlock);
 --          Game:setTetromino(Platform:random() % TETROMINO_TYPES, self.m_fallingBlock);
-          Game:makeNewTetromino(self.m_fallingBlock);
+                Game:makeNewTetromino(self.m_fallingBlock);
+                Game:onTetrominoMoved();
 			end
 		end
 	else
@@ -653,6 +712,8 @@ function Game:dropTetromino()
     -- Shadow has already calculated the landing position.
     self.m_fallingBlock.y = self.m_fallingBlock.y + self.m_shadowGap;
 
+
+
     -- Force lock.
     Game:moveTetromino(0, 1); 
 
@@ -669,11 +730,11 @@ end
 -- Main game function called every frame.
 function Game:update()
 	-- Update game state.
-	if self.m_isOver then
-		if isFlagSet(self.m_events, Game.Event.RESTART) then
+	if isFlagSet(self.m_events, Game.Event.RESTART) then
+	--	if isFlagSet(self.m_events, Game.Event.RESTART) then
 			self.m_isOver = false;
 			Game:start();
-		end
+	--	end
 	else
 		local currentTime = Platform:getSystemTime();
 
@@ -721,10 +782,10 @@ function Game:update()
 			self.m_lastFallTime = self.m_lastFallTime + (currentTime - self.m_systemTime);
 		else 
 			if (self.m_events ~= Game.Event.NONE) then
-				if isFlagSet(self.m_events, Game.Event.SHOW_NEXT) then
-					self.m_showPreview = not self.m_showPreview;
-					self.m_stateChanged = true;
-				end
+				-- if isFlagSet(self.m_events, Game.Event.SHOW_NEXT) then
+				-- 	self.m_showPreview = not self.m_showPreview;
+				-- 	self.m_stateChanged = true;
+				-- end
 				if isFlagSet(self.m_events, Game.Event.SHOW_SHADOW) then
 					self.m_showShadow = not self.m_showShadow;
 					self.m_stateChanged = true;
@@ -764,12 +825,12 @@ end
 
 -- This event is called when the falling tetromino is moved.
 function Game:onTetrominoMoved()
-	-- local y = 1;
-	-- Calculate number of cells where shadow tetromino would be.
-	-- while (not Game:checkCollision(0, y)) do
- --        y = y + 1;
- --    end
-	-- self.m_shadowGap = y - 1;
+	local y = 1;
+	--Calculate number of cells where shadow tetromino would be.
+	while (not Game:checkCollision(0, y)) do
+        y = y + 1;
+    end
+	self.m_shadowGap = y - 1;
 	self.m_stateChanged = true;
 end
 
@@ -810,6 +871,14 @@ function Game:onEventEnd(command)
         self.m_delayRotation = -1;
 	end
 end
+
+
+function Game:gameEnded()
+    print("gameEnded: ");
+    self.m_isOver = true; 
+    m_highScore = math.max(self.m_stats.lines, m_highScore);
+end
+
 
 -- Bit flags utility helpers.
 function isFlagSet(set, flag)

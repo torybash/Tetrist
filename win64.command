@@ -1,0 +1,1 @@
+cat love.exe Tetrist.love > Tetrist.exe

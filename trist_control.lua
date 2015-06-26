@@ -1,7 +1,8 @@
 TristControl = {
   State = {
       MENU = 0,
-      GAME = 1
+      GAME = 1,
+      GAME_OVER = 2
   };
 };
 
@@ -17,7 +18,7 @@ function TristControl:startGame(difficulty)
   state = TristControl.State.GAME;
   
   Platform:init()
-  Trist:init(0);
+  Trist:init(difficulty);
   useEvilOrder = false;
   if (difficulty > 0) then useEvilOrder = true; end
   Game:start(useEvilOrder);
@@ -45,31 +46,40 @@ function TristControl:renderGame()
 end
 
 
-function TristControl:onKeyDown(key)
-  if (m_state == TristControl.State.MENU) then
+function TristControl:keypressed(key, unicode)
+  if (state == TristControl.State.MENU) then
       
-  elseif (m_state == TristControl.State.GAME) then
+  elseif (state == TristControl.State.GAME) then
      Platform:onKeyDown(key);
   end
    
 end
 
-function TristControl:onKeyUp(key)
-    if (m_state == TristControl.State.MENU) then
+function TristControl:keyreleased(key)
+
+
+  if (state == TristControl.State.MENU) then
       
-  elseif (m_state == TristControl.State.GAME) then
+  elseif (state == TristControl.State.GAME) then
      Platform:onKeyUp(key);
   end
 end
 
 
 function TristControl:mousePressed(x, y, button)
-  print(x, y, button);
-  if (x > 490 and x < 790) then
-      if (y > 100 and y < 200) then
-        TristControl:startGame(0);
-      elseif (y > 210 and y < 310) then
-        TristControl:startGame(1);
-      end
+  print(x, y);
+  print(state);
+  if (state == TristControl.State.MENU) then
+    if (button ~= "l") then return; end
+    if (x > 490 and x < 790) then
+        if (y > 380 and y < 480) then
+          TristControl:startGame(1);
+        elseif (y > 490 and y < 590) then
+          TristControl:startGame(0);
+        end
+    end
+  elseif (state == TristControl.State.GAME) then
+
   end
+
 end
